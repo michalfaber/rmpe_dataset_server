@@ -305,6 +305,11 @@ void DataTransformer::PutVecMaps(double* entryX, double* entryY, Mat& count, Poi
   int max_y = std::min( int(round(std::max(centerA.y, centerB.y)+thre)), grid_y);
 
   float norm_bc = sqrt(bc.x*bc.x + bc.y*bc.y);
+  // skip if body parts overlap
+  if (norm_bc < 1e-8) {
+      return;
+  }
+
   bc.x = bc.x /norm_bc;
   bc.y = bc.y /norm_bc;
 
@@ -626,14 +631,10 @@ void DataTransformer::Transform(const uchar *data, const int datum_channels, con
 
   for (int g_y = 0; g_y < grid_y; g_y++) {
     for (int g_x = 0; g_x < grid_x; g_x++) {
-      for (int i = 0; i < np; i++){
-        float weight = float(mask_miss_aug.at<uchar>(g_y, g_x)) /255; //mask_miss_aug.at<uchar>(i, j);
-        if (meta.joint_self.is_visible[i] != 3){
-          transformed_label[i*channel_offset + g_y*grid_x + g_x] = weight;
-        }
+      for (int i = 0; i < np+1; i++) {
+        float mask = float(mask_miss_aug.at<uchar>(g_y, g_x)) / 255;
+        transformed_label[i*channel_offset + g_y*grid_x + g_x] = mask;
       }
-      // background channel
-      transformed_label[np*channel_offset + g_y*grid_x + g_x] = float(mask_miss_aug.at<uchar>(g_y, g_x)) /255;
     }
   }
 
